@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize')
-const sequelize = require('./sequelize')
+const sequelize = require('../config/sequelize')
 
 const Sys_organization = require('../model/Sys_organization')
 
@@ -7,67 +7,57 @@ const Sys_organization = require('../model/Sys_organization')
 const Sys_role = sequelize.define('sys_role', {
 	// 编号
 	Role_ID: {
-		type: Sequelize.BIGINT(32),
+		type: Sequelize.BIGINT(20),
 		primaryKey: true,
 		allowNull: false
 	},
-	// 归属机构
-	Organization_ID: {
-		type: Sequelize.BIGINT(32)
+	// 归属公司
+	Company_ID: {
+		type: Sequelize.BIGINT(20)
 	},
 	// 角色名称
-	Name: {
+	RoleName: {
 		type: Sequelize.STRING(100),
 		allowNull: false
 	},
 	// 英文名称
-	EnName: {
+	RoleEnName: {
 		type: Sequelize.STRING(100)
 	},
 	// 权限类型
 	RoleType: {
 		type: Sequelize.STRING(50)
 	},
-	// 数据范围
-	DataScope: {
-		type: Sequelize.CHAR(1)
-	},
-	// 是否系统数据
-	Issys: {
-		type: Sequelize.CHAR(1)
-	},
-	// 是否可用
-	Useable: {
-		type: Sequelize.CHAR(1)
+	// 角色代码
+	RoleCode: {
+		type: Sequelize.STRING(50)
 	},
 	// 创建者
 	CreateBy: {
-		type: Sequelize.BIGINT(32),
-		allowNull: false
+		type: Sequelize.BIGINT(20)
 	},
 	// 创建时间
-	CreateDate: {
+	CreateTime: {
 		type: Sequelize.DATE,
 		defaultValue: new Date()
 	},
 	// 更新者
 	UpdateBy: {
-		type: Sequelize.BIGINT(32),
-		allowNull: false
+		type: Sequelize.BIGINT(20)
 	},
 	// 更新时间
-	UpdateDate: {
+	UpdateTime: {
 		type: Sequelize.DATE,
 		defaultValue: new Date()
 	},
 	// 备注信息
 	Remark: {
-		type: Sequelize.STRING(255)
+		type: Sequelize.STRING(320)
 	},
 	// 删除标记
 	DelFlag: {
 		type: Sequelize.CHAR(1),
-		allowNull: false
+		defaultValue: 'N'
 	}
 })
 

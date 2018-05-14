@@ -1,10 +1,10 @@
 const Sequelize = require('sequelize')
-const sequelize = require('./sequelize')
+const sequelize = require('../config/sequelize')
 
-/* 权限角色与用户关联 */
-const Sys_user_role = sequelize.define('sys_user_role', {
+/* 权限角色与员工关联 */
+const Sys_staff_role = sequelize.define('sys_rolestaff', {
 	// 用户编号
-	user_id: {
+	staff_id: {
 		type: Sequelize.BIGINT(32),
 		allowNull: false
 	},
@@ -15,5 +15,5 @@ const Sys_user_role = sequelize.define('sys_user_role', {
 	}
 })
 
-module.exports = Sys_user_role
+module.exports = Sys_staff_role
 

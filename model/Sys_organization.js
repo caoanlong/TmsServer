@@ -1,41 +1,35 @@
 const Sequelize = require('sequelize')
-const sequelize = require('./sequelize')
-
-const Base_area = require('./Base_area')
+const sequelize = require('../config/sequelize')
 
 /* 组织机构 */
 const Sys_organization = sequelize.define('sys_organization', {
-	// 组织机构ID
+	// 组织ID
 	Organization_ID: {
-		type: Sequelize.BIGINT(32),
+		type: Sequelize.BIGINT(20),
 		primaryKey: true,
 		allowNull: false
 	},
-	// 区域ID
-	Area_ID: {
-		type: Sequelize.BIGINT(32)
-	},
-	// 父级编号s
-	ParentIds: {
-		type: Sequelize.STRING(2000)
-	},
-	// 父级编号
+	// 组织父ID
 	Organization_PID: {
-		type: Sequelize.BIGINT(32),
-		allowNull: false
+		type: Sequelize.BIGINT(20)
 	},
-	// 机构编码
-	Code: {
-		type: Sequelize.STRING(64)
-	},
-	// 机构类型
-	Type: {
-		type: Sequelize.STRING(50),
-		allowNull: false
+	// 公司ID
+	Company_ID: {
+		type: Sequelize.BIGINT(20)
 	},
 	// 名称
 	Name: {
 		type: Sequelize.STRING(100),
+		allowNull: false
+	},
+	// 所有父级编号
+	Path: {
+		type: Sequelize.STRING(2000),
+		allowNull: false
+	},
+	// 排序
+	Sort: {
+		type: Sequelize.INTEGER(11),
 		allowNull: false
 	},
 	// 机构等级
@@ -43,10 +37,9 @@ const Sys_organization = sequelize.define('sys_organization', {
 		type: Sequelize.CHAR(1),
 		allowNull: false
 	},
-	// 排序
-	SortNumber: {
-		type: Sequelize.BIGINT(11),
-		allowNull: false
+	// 地区ID
+	Area_ID: {
+		type: Sequelize.STRING(32)
 	},
 	// 联系地址
 	Address: {
@@ -56,8 +49,12 @@ const Sys_organization = sequelize.define('sys_organization', {
 	ZipCode: {
 		type: Sequelize.STRING(100)
 	},
+	// 负责人ID
+	Respo_ID: {
+		type: Sequelize.BIGINT(20)
+	},
 	// 负责人
-	Master: {
+	Respo: {
 		type: Sequelize.STRING(100)
 	},
 	// 电话
@@ -72,50 +69,48 @@ const Sys_organization = sequelize.define('sys_organization', {
 	Email: {
 		type: Sequelize.STRING(200)
 	},
-	// 是否可用
-	Useable: {
-		type: Sequelize.CHAR(1)
+	// 是否启用
+	EnableFlag: {
+		type: Sequelize.CHAR(1),
+		defaultValue: 'N'
 	},
-	// 主负责人
-	PrimaryPerson: {
-		type: Sequelize.STRING(64)
-	},
-	// 副负责人
-	DeputyPerson: {
-		type: Sequelize.STRING(64)
+	// 备注
+	Remark: {
+		type: Sequelize.TEXT
 	},
 	// 创建者
 	CreateBy: {
-		type: Sequelize.BIGINT(32),
-		allowNull: false
+		type: Sequelize.BIGINT(20)
 	},
 	// 创建时间
-	CreateDate: {
+	CreateTime: {
 		type: Sequelize.DATE,
 		defaultValue: new Date()
 	},
 	// 更新者
 	UpdateBy: {
-		type: Sequelize.BIGINT(32),
-		allowNull: false
+		type: Sequelize.BIGINT(20)
 	},
 	// 更新时间
-	UpdateDate: {
+	UpdateTime: {
 		type: Sequelize.DATE,
 		defaultValue: new Date()
 	},
-	// 备注信息
-	Remark: {
-		type: Sequelize.STRING(255)
-	},
 	// 删除标记
-	DelFlag: {
+	DeleteFlag: {
 		type: Sequelize.CHAR(1),
-		allowNull: false
+		defaultValue: 'N'
+	},
+	// 删除人
+	DeleteBy: {
+		type: Sequelize.BIGINT(20)
+	},
+	// 删除时间
+	DeleteTime: {
+		type: Sequelize.DATE,
+		defaultValue: new Date()
 	}
 })
-
-Sys_organization.belongsTo(Base_area, {foreignKey: 'Area_ID'})
 
 module.exports = Sys_organization
 
