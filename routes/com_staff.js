@@ -8,7 +8,8 @@ const genPassword = require('../utils/cryptoPassword')
 const Com_staff = require('../model/Com_staff')
 const Sys_role = require('../model/Sys_role')
 const Sys_staff_role = require('../model/Sys_staff_role')
-const Sys_organization = require('../model/Sys_organization')
+const Com_companyinfo = require('../model/Com_companyinfo')
+const { findCompanyIDByUser } = require('../utils/common')
 
 // 统一返回格式
 let responseData
@@ -27,18 +28,16 @@ router.get('/list', (req, res) => {
 	let pageSize = Number(req.query.pageSize || 10)
 	let RealName = req.query.RealName
 	let Mobile = req.query.Mobile
-	let Company_ID = req.query.Company_ID
 	pageIndex = Math.max( pageIndex, 1 )
 	let offset = (pageIndex - 1) * pageSize
-	let where = {}
+	let where = {
+		DeleteFlag: 'N'
+	}
 	if (RealName) {
 		where['RealName'] = { $like: '%' + RealName + '%' }
 	}
 	if (Mobile) {
 		where['Mobile'] = { $like: '%' + Mobile + '%' }
-	}
-	if (Company_ID) {
-		where['Company_ID'] = Company_ID
 	}
 	Com_staff.findAndCountAll({
 		where: where,
@@ -49,11 +48,33 @@ router.get('/list', (req, res) => {
 		],
 		include: [
 			{
-				model: Sys_organization,
+				model: Com_companyinfo,
 				as: 'company'
 			}
 		]
 	}).then(staffs => {
+		let staffList = staffs.rows.map(item => {
+			return {
+				Staff_ID: item.Staff_ID,
+				Member_ID: item.Member_ID,
+				HeadPic: item.HeadPic,
+				RealName: item.RealName,
+				Mobile: item.Mobile,
+				StaffCode: item.StaffCode,
+				EntryDate: item.EntryDate,
+				PositionType: item.PositionType,
+				Position: item.Position,
+				WorkStatus: item.WorkStatus,
+				Status: item.Status,
+				InLeave: item.InLeave,
+				Remark: item.Remark,
+				CreateBy: item.CreateBy,
+				UpdateBy: item.UpdateBy,
+				CreateTime: item.CreateTime,
+				UpdateTime: item.UpdateTime
+			}
+		})
+		staffs.rows = staffList
 		responseData.data = staffs
 		responseData.data.pageIndex = pageIndex
 		responseData.data.pageSize = pageSize
@@ -70,7 +91,7 @@ router.get('/info', (req, res) => {
 				model: Sys_role
 			},
 			{
-				model: Sys_organization,
+				model: Com_companyinfo,
 				as: 'company'
 			}
 		]
@@ -87,7 +108,6 @@ router.get('/info', (req, res) => {
 /* 添加员工 */
 router.post('/add', (req, res) => {
 	let Staff_ID = snowflake.nextId()
-	let Company_ID = req.body.Company_ID
 	let Member_ID = req.body.Member_ID
 	let HeadPic = req.body.HeadPic
 	let RealName = req.body.RealName
@@ -96,63 +116,50 @@ router.post('/add', (req, res) => {
 	let EntryDate = req.body.EntryDate
 	let PositionType = req.body.PositionType
 	let Position = req.body.Position
-	let Photo = req.body.Photo
-	let PCID = req.body.PCID
-	let LoginFlag = req.body.LoginFlag
+	let WorkStatus = req.body.WorkStatus
+	let Status = req.body.Status
+	let InLeave = req.body.InLeave
+	let Remark = req.body.Remark
 	let CreateBy = req.user.userID
 	let UpdateBy = req.user.userID
-	let Remark = req.body.Remark
 	let sys_roles = req.body.sys_roles
-	Password = genPassword(Password)
-	Com_staff.create({
-		Staff_ID,
-		Company_ID,
-		LoginName,
-		Password,
-		PayPassword,
-		JobNo,
-		Name,
-		Sex,
-		Email,
-		Phone,
-		Mobile,
-		Type,
-		Photo,
-		PCID,
-		LoginFlag,
-		CreateBy,
-		UpdateBy,
-		Remark
-	}).then(staff => {
-		for (let i = 0; i < sys_roles.length; i++) {
-			Sys_staff_role.create({
-				user_id: staff.Staff_ID,
-				role_id: sys_roles[i]
+	findCompanyIDByUser(req.user.userID).then(Company_ID => {
+		Com_staff.create({
+			Staff_ID,
+			Company_ID,
+			Member_ID,
+			HeadPic,
+			RealName,
+			Mobile,
+			StaffCode,
+			EntryDate,
+			PositionType,
+			Position,
+			WorkStatus,
+			Status,
+			InLeave,
+			Remark,
+			CreateBy,
+			UpdateBy
+		}).then(staff => {
+			let staffRoles = []
+			for (let i = 0; i < sys_roles.length; i++) {
+				staffRoles.push({
+					Staff_ID: staff.Staff_ID,
+					Role_ID: sys_roles[i]
+				})
+			}
+			Sys_staff_role.bulkCreate(staffRoles).then(() => {
+				res.json(responseData)
 			})
-		}
-		res.json(responseData)
+		}).catch(err => {
+			responseData.code = 100
+			responseData.msg = '错误：' + err
+			res.json(responseData)
+		})
 	}).catch(err => {
 		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
-
-/* 批量添加员工 */
-router.post('/addmutip', (req, res) => {
-	let staffs = req.body.staffs
-	for (let i = 0; i < staffs.length; i++) {
-		staffs[i].User_ID = snowflake.nextId()
-		staffs[i].CreateBy = req.user.userID
-		staffs[i].UpdateBy = req.user.userID
-		staffs[i].Remark = ''
-		Password = genPassword(staffs[i].Password)
-	}
-	Com_staff.bulkCreate(staffs).then(staff => {
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
+		responseData.msg = err
 		res.json(responseData)
 	})
 })
@@ -160,45 +167,36 @@ router.post('/addmutip', (req, res) => {
 /* 修改员工 */
 router.post('/update', (req, res) => {
 	let Staff_ID = req.body.Staff_ID
-	let Company_ID = req.body.Company_ID || ''
-	let LoginName = req.body.LoginName
-	let Password = req.body.Password
-	let PayPassword = req.body.PayPassword || ''
-	let JobNo = req.body.JobNo
-	let Name = req.body.Name
-	let Sex = req.body.Sex
-	let Email = req.body.Email
-	let Phone = req.body.Phone
+	let Member_ID = req.body.Member_ID
+	let HeadPic = req.body.HeadPic
+	let RealName = req.body.RealName
 	let Mobile = req.body.Mobile
-	let Type = req.body.Type
-	let Photo = req.body.Photo || ''
-	let PCID = req.body.PCID || ''
-	let LoginFlag = req.body.LoginFlag
+	let StaffCode = req.body.StaffCode
+	let EntryDate = req.body.EntryDate
+	let PositionType = req.body.PositionType
+	let Position = req.body.Position
+	let WorkStatus = req.body.WorkStatus
+	let Status = req.body.Status
+	let InLeave = req.body.InLeave
+	let Remark = req.body.Remark
 	let UpdateBy = req.user.userID
-	let Remark = req.body.Remark || ''
-	let sys_roles = req.body.sys_roles || []
-	let property = {
-		Company_ID,
-		LoginName,
-		PayPassword,
-		JobNo,
-		Name,
-		Sex,
-		Email,
-		Phone,
+	let sys_roles = req.body.sys_roles
+	Com_staff.update({
+		Member_ID,
+		HeadPic,
+		RealName,
 		Mobile,
-		Type,
-		Photo,
-		PCID,
-		LoginFlag,
-		UpdateBy,
+		StaffCode,
+		EntryDate,
+		PositionType,
+		Position,
+		WorkStatus,
+		Status,
+		InLeave,
 		Remark,
+		UpdateBy,
 		UpdateDate: new Date()
-	}
-	if (Password) {
-		property['Password'] = genPassword(Password)
-	}
-	Com_staff.update(property,{
+	},{
 		where: {
 			Staff_ID
 		}
@@ -208,13 +206,16 @@ router.post('/update', (req, res) => {
 				staff_id: Staff_ID
 			}
 		}).then(() => {
-			for (let i = 0; i < staffs.length; i++) {
-				Sys_staff_role.create({
-					staff_id: Staff_ID,
-					role_id: staffs[i]
+			let staffRoles = []
+			for (let i = 0; i < sys_roles.length; i++) {
+				staffRoles.push({
+					Staff_ID: Staff_ID,
+					Role_ID: sys_roles[i]
 				})
 			}
-			res.json(responseData)
+			Sys_staff_role.bulkCreate(staffRoles).then(() => {
+				res.json(responseData)
+			})
 		})
 	}).catch(err => {
 		responseData.code = 100
@@ -226,7 +227,9 @@ router.post('/update', (req, res) => {
 /* 删除员工 */
 router.post('/delete', (req, res) => {
 	let ids = req.body.ids
-	Com_staff.destroy({
+	Com_staff.update({
+		DeleteFlag: 'Y'
+	}, {
 		where: {
 			Staff_ID: {
 				$in: ids
@@ -242,6 +245,10 @@ router.post('/delete', (req, res) => {
 		}).then(() => {
 			res.json(responseData)
 		})
+	}).catch(err => {
+		responseData.code = 100
+		responseData.msg = '错误：' + err
+		res.json(responseData)
 	})
 })
 

@@ -7,6 +7,7 @@ const Sys_menu = require('../model/Sys_menu')
 const Com_staff = require('../model/Com_staff')
 const Sys_staff_role = require('../model/Sys_staff_role')
 const Sys_role_menu = require('../model/Sys_role_menu')
+const { findCompanyIDByUser } = require('../utils/common')
 
 // 统一返回格式
 let responseData
@@ -23,19 +24,19 @@ router.use((req, res, next) => {
 router.get('/list', (req, res) => {
 	let pageIndex = Number(req.query.pageIndex || 1)
 	let pageSize = Number(req.query.pageSize || 10)
-	let Name = req.query.Name
+	let RoleName = req.query.RoleName
 	pageIndex = Math.max( pageIndex, 1 )
 	let offset = (pageIndex - 1) * pageSize
 	let where = {}
-	if (Name) {
-		where['Name'] = { $like: '%' + Name + '%' }
+	if (RoleName) {
+		where['RoleName'] = { $like: '%' + RoleName + '%' }
 	}
 	Sys_role.findAndCountAll({
 		where: where,
 		offset: offset,
 		limit: pageSize,
 		order: [
-			['CreateDate', 'DESC']
+			['CreateTime', 'DESC']
 		]
 	}).then(sys_roles => {
 		responseData.data = sys_roles
@@ -55,7 +56,7 @@ router.get('/info', (req, res) => {
 			},
 			{
 				model: Sys_menu
-			},
+			}
 		]
 	}).then(sys_role => {
 		responseData.data = sys_role
@@ -71,42 +72,34 @@ router.get('/info', (req, res) => {
 router.post('/add', (req, res) => {
 	let User_ID = req.user.userID
 	let Role_ID = snowflake.nextId()
-	let Organization_ID = req.body.Organization_ID || ''
-	let Name = req.body.Name
-	let EnName = req.body.EnName
+	let RoleName = req.body.RoleName
+	let RoleEnName = req.body.RoleEnName
 	let RoleType = req.body.RoleType
-	let DataScope = req.body.DataScope
-	let Issys = req.body.Issys
-	let Useable = req.body.Useable
+	let RoleCode = req.body.RoleCode
 	let CreateBy = User_ID
 	let UpdateBy = User_ID
 	let Remark = req.body.Remark || ''
-	let DelFlag = req.body.DelFlag || ''
-	let sys_users = req.body.sys_users || []
-	Sys_role.create({
-		Role_ID,
-		Organization_ID,
-		Name,
-		EnName,
-		RoleType,
-		DataScope,
-		Issys,
-		Useable,
-		CreateBy,
-		UpdateBy,
-		Remark,
-		DelFlag
-	}).then(sys_role => {
-		for (let i = 0; i < sys_users.length; i++) {
-			Sys_staff_role.create({
-				user_id: sys_users[i],
-				role_id: sys_role.Role_ID
-			})
-		}
-		res.json(responseData)
+	findCompanyIDByUser(req.user.userID).then(Company_ID => {
+		Sys_role.create({
+			Role_ID,
+			Company_ID,
+			RoleName,
+			RoleEnName,
+			RoleType,
+			RoleCode,
+			CreateBy,
+			UpdateBy,
+			Remark
+		}).then(sys_role => {
+			res.json(responseData)
+		}).catch(err => {
+			responseData.code = 100
+			responseData.msg = '错误：' + err
+			res.json(responseData)
+		})
 	}).catch(err => {
 		responseData.code = 100
-		responseData.msg = '错误：' + err
+		responseData.msg = err
 		res.json(responseData)
 	})
 })
@@ -115,27 +108,19 @@ router.post('/add', (req, res) => {
 router.post('/update', (req, res) => {
 	let User_ID = req.user.userID
 	let Role_ID = req.body.Role_ID
-	let Organization_ID = req.body.Organization_ID || ''
-	let Name = req.body.Name
-	let EnName = req.body.EnName
+	let RoleName = req.body.RoleName
+	let RoleEnName = req.body.RoleEnName
 	let RoleType = req.body.RoleType
-	let DataScope = req.body.DataScope
-	let Issys = req.body.Issys
-	let Useable = req.body.Useable
+	let RoleCode = req.body.RoleCode
 	let UpdateBy = User_ID
 	let Remark = req.body.Remark || ''
-	let DelFlag = req.body.DelFlag || ''
 	Sys_role.update({
-		Organization_ID,
-		Name,
-		EnName,
+		RoleName,
+		RoleEnName,
 		RoleType,
-		DataScope,
-		Issys,
-		Useable,
+		RoleCode,
 		UpdateBy,
 		Remark,
-		DelFlag,
 		UpdateDate: new Date()
 	}, {
 		where: {
@@ -153,19 +138,22 @@ router.post('/update', (req, res) => {
 /* 修改角色权限菜单 */
 router.post('/update/menu', (req, res) => {
 	let Role_ID = req.body.Role_ID
-	let sys_menus = req.body.sys_menus || ''
+	let sys_menus = req.body.sys_menus || []
 	Sys_role_menu.destroy({
 		where: {
 			role_id: Role_ID
 		}
 	}).then(() => {
+		let roleMenus = []
 		for (let i = 0; i < sys_menus.length; i++) {
-			Sys_role_menu.create({
-				menu_id: sys_menus[i],
-				role_id: Role_ID
+			roleMenus.push({
+				Menu_ID: sys_menus[i],
+				Role_ID: Role_ID
 			})
 		}
-		res.json(responseData)
+		Sys_role_menu.bulkCreate(roleMenus).then(() => {
+			res.json(responseData)
+		})
 	}).catch(err => {
 		responseData.code = 100
 		responseData.msg = '错误：' + err
@@ -177,19 +165,21 @@ router.post('/update/menu', (req, res) => {
 router.post('/update/user', (req, res) => {
 	let Role_ID = req.body.Role_ID
 	let sys_users = req.body.sys_users || ''
-	console.log(Role_ID, sys_users)
 	Sys_staff_role.destroy({
 		where: {
 			role_id: Role_ID
 		}
 	}).then(() => {
+		let staffRoles = []
 		for (let i = 0; i < sys_users.length; i++) {
-			Sys_staff_role.create({
-				user_id: sys_users[i],
-				role_id: Role_ID
+			staffRoles.push({
+				Staff_ID: sys_users[i],
+				Role_ID: Role_ID
 			})
 		}
-		res.json(responseData)
+		Sys_staff_role.bulkCreate(staffRoles).then(() => {
+			res.json(responseData)
+		})
 	}).catch(err => {
 		responseData.code = 100
 		responseData.msg = '错误：' + err

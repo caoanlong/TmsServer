@@ -23,8 +23,10 @@ router.use((req, res, next) => {
 /* 获取菜单列表 */
 router.get('/list', (req, res, dd) => {
 	let User_ID = req.user.userID
-	// let User_ID = 1
-	Com_staff.findById(User_ID, {
+	Com_staff.findOne({
+		where: {
+			Member_ID: User_ID
+		},
 		include: [
 			{
 				model: Sys_role,
@@ -36,11 +38,10 @@ router.get('/list', (req, res, dd) => {
 			}
 		]
 	}).then(staff => {
-		// 表改为sys_menu_2
 		let arr = []
 		for (let i = 0; i < staff.sys_roles.length; i++) {
-			for (let j = 0; j < staff.sys_roles[i].sys_menu_2s.length; j++) {
-				arr.push(staff.sys_roles[i].sys_menu_2s[j])
+			for (let j = 0; j < staff.sys_roles[i].sys_menus.length; j++) {
+				arr.push(staff.sys_roles[i].sys_menus[j])
 			}
 		}
 		let array = []
@@ -98,7 +99,7 @@ router.get('/info', (req, res) => {
 router.post('/add', (req, res) => {
 	let User_ID = req.user.userID
 	let Menu_ID = snowflake.nextId()
-	let Menu_PID = req.body.Menu_PID
+	let Menu_PID = req.body.Menu_PID || null
 	let Name = req.body.Name
 	let Target = req.body.Target
 	let SortNumber = req.body.SortNumber
@@ -106,7 +107,9 @@ router.post('/add', (req, res) => {
 	let Icon = req.body.Icon
 	let IsShow = req.body.IsShow
 	let sys_roles = req.body.sys_roles || []
-	let Remark = req.body.Remark || '1'
+	let Remark = req.body.Remark || ''
+	let CreateBy = User_ID
+	let UpdateBy = User_ID
 	Sys_menu.create({
 		Menu_ID,
 		Menu_PID,
@@ -116,17 +119,20 @@ router.post('/add', (req, res) => {
 		Href,
 		Icon,
 		IsShow,
-		CreateBy: User_ID,
-		UpdateBy: User_ID,
+		CreateBy,
+		UpdateBy,
 		Remark
 	}).then(sys_menu => {
+		let roleMenus = []
 		for (let i = 0; i < sys_roles.length; i++) {
-			Sys_role_menu.create({
-				menu_id: sys_menu.Menu_ID,
-				role_id: sys_roles[i]
+			roleMenus.push({
+				Menu_ID: sys_menu.Menu_ID,
+				Role_ID: sys_roles[i]
 			})
 		}
-		res.json(responseData)
+		Sys_role_menu.bulkCreate(roleMenus).then(() => {
+			res.json(responseData)
+		})
 	}).catch(err => {
 		responseData.code = 100
 		responseData.msg = '错误：' + err
@@ -147,6 +153,7 @@ router.post('/update', (req, res) => {
 	let IsShow = req.body.IsShow
 	let sys_roles = req.body.sys_roles || []
 	let Remark = req.body.Remark || ''
+	let UpdateBy = User_ID
 	Sys_menu.update({
 		Menu_PID, 
 		Name, 
@@ -155,7 +162,7 @@ router.post('/update', (req, res) => {
 		Href, 
 		Icon,
 		IsShow,
-		UpdateBy: User_ID,
+		UpdateBy,
 		Remark,
 		UpdateDate: new Date()
 	},{
@@ -168,13 +175,16 @@ router.post('/update', (req, res) => {
 				menu_id: Menu_ID
 			}
 		}).then(() => {
+			let roleMenus = []
 			for (let i = 0; i < sys_roles.length; i++) {
-				Sys_role_menu.create({
-					menu_id: Menu_ID,
-					role_id: sys_roles[i]
+				roleMenus.push({
+					Menu_ID: Menu_ID,
+					Role_ID: sys_roles[i]
 				})
 			}
-			res.json(responseData)
+			Sys_role_menu.bulkCreate(roleMenus).then(() => {
+				res.json(responseData)
+			})
 		})
 	}).catch(err => {
 		responseData.code = 100

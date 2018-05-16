@@ -3,7 +3,7 @@ const sequelize = require('../config/sequelize')
 
 const Sys_role = require('../model/Sys_role')
 const Sys_staff_role = require('../model/Sys_staff_role')
-const Sys_organization = require('../model/Sys_organization')
+const Com_companyinfo = require('../model/Com_companyinfo')
 
 /* 员工 */
 const Com_staff = sequelize.define('com_staff', {
@@ -90,8 +90,7 @@ const Com_staff = sequelize.define('com_staff', {
 	},
 	// 删除时间
 	DeleteTime: {
-		type: Sequelize.DATE,
-		defaultValue: new Date()
+		type: Sequelize.DATE
 	},
 	// 删除人
 	DeleteBy: {
@@ -113,9 +112,9 @@ const Com_staff = sequelize.define('com_staff', {
 	}
 })
 
-Com_staff.belongsToMany(Sys_role, {through: Sys_staff_role, foreignKey: 'staff_id'})
-Sys_role.belongsToMany(Com_staff, {through: Sys_staff_role, foreignKey: 'role_id'})
-Com_staff.belongsTo(Sys_organization, {as: 'company', foreignKey: 'Company_ID'})
+Com_staff.belongsToMany(Sys_role, {through: Sys_staff_role, foreignKey: 'Staff_ID'})
+Sys_role.belongsToMany(Com_staff, {through: Sys_staff_role, foreignKey: 'Role_ID'})
+Com_staff.belongsTo(Com_companyinfo, {as: 'company', foreignKey: 'Company_ID'})
 
 module.exports = Com_staff
 

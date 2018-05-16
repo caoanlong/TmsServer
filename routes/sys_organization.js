@@ -3,8 +3,7 @@ const router = express.Router()
 const snowflake = require('../utils/snowflake')
 
 const Sys_organization = require('../model/Sys_organization')
-const Com_companyinfo = require('../model/Com_companyinfo')
-const Com_staff = require('../model/Com_staff')
+const { findCompanyIDByUser } = require('../utils/common')
 
 // 统一返回格式
 let responseData
@@ -79,21 +78,7 @@ router.post('/add', (req, res) => {
 	let CreateBy = User_ID
 	let UpdateBy = User_ID
 	let Path = ''
-	new Promise((resolve, reject) => {
-		Com_companyinfo.find({Respo_ID: req.user.userID}).then(com_companyinfo => {
-			if (com_companyinfo.Company_ID) {
-				resolve(com_companyinfo.Company_ID)
-			} else {
-				Com_staff.findById(Respo_ID).then(com_staff => {
-					if (com_staff.Company_ID) {
-						resolve(com_staff.Company_ID)
-					} else {
-						reject()
-					}
-				})
-			}
-		})
-	}).then(Company_ID => {
+	findCompanyIDByUser(req.user.userID).then(Company_ID => {
 		Sys_organization.findById(Organization_PID).then(sys_organization => {
 			if (sys_organization) {
 				Path = sys_organization.Path + Organization_PID + ','
@@ -128,16 +113,15 @@ router.post('/add', (req, res) => {
 				res.json(responseData)
 			})
 		})
-	}).catch(() => {
+	}).catch(err => {
 		responseData.code = 100
-		responseData.msg = '查不到companyID！'
+		responseData.msg = err
 		res.json(responseData)
 	})
 })
 
 /* 修改机构 */
 router.post('/update', (req, res) => {
-	console.log(req.body)
 	let User_ID = req.user.userID
 	let Organization_ID = req.body.Organization_ID
 	let Area_ID = req.body.Area_ID

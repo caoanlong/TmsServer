@@ -1,8 +1,6 @@
 const Sequelize = require('sequelize')
 const sequelize = require('../config/sequelize')
 
-const Sys_organization = require('../model/Sys_organization')
-
 /* 系统权限角色 */
 const Sys_role = sequelize.define('sys_role', {
 	// 编号
@@ -60,8 +58,6 @@ const Sys_role = sequelize.define('sys_role', {
 		defaultValue: 'N'
 	}
 })
-
-Sys_role.belongsTo(Sys_organization, {foreignKey: 'Organization_ID'})
 
 module.exports = Sys_role
 
