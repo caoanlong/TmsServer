@@ -21,7 +21,7 @@ router.use((req, res, next) => {
 
 
 /* 获取菜单列表 */
-router.get('/list', (req, res, dd) => {
+router.get('/list', (req, res) => {
 	let User_ID = req.user.userID
 	Com_staff.findOne({
 		where: {
@@ -38,6 +38,20 @@ router.get('/list', (req, res, dd) => {
 			}
 		]
 	}).then(staff => {
+		if (!staff) {
+			Sys_menu.findAll().then(sys_menus => {
+				menusTree(sys_menus).then(menus => {
+					responseData.data = menus
+					responseData.permissions = menus.map(item => item.Target)
+					res.json(responseData)
+				})
+			}).catch(err => {
+				responseData.code = 100
+				responseData.msg = '错误：' + err
+				res.json(responseData)
+			})
+			return
+		}
 		let arr = []
 		for (let i = 0; i < staff.sys_roles.length; i++) {
 			for (let j = 0; j < staff.sys_roles[i].sys_menus.length; j++) {
