@@ -25,3 +25,8 @@ exports.findCompanyIDByUser = function (userID) {
 		})
 	})
 }
+
+// 获取客户端ip
+exports.getClientIp = function (req) {
+	return req.headers['x-forwarded-for'] || req.connection.remoteAddress || ''
+}

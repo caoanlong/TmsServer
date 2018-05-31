@@ -25,7 +25,7 @@ router.use((req, res, next) => {
 
 router.use((req, res, next) => {
 	// 过滤登录路由
-	if (req.url.includes('login')) {
+	if (req.url.includes('login') || req.url.includes('baiduMap')) {
 		next()
 		return
 	}
@@ -76,5 +76,6 @@ router.use('/com_staff', require('./com_staff'))
 router.use('/sys_menu', require('./sys_menu'))
 router.use('/sys_role', require('./sys_role'))
 router.use('/sys_organization', require('./sys_organization'))
+router.use('/baiduMap', require('./baiduMap'))
 
 module.exports = router
