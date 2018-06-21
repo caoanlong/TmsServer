@@ -1,0 +1,1 @@
+module.exports = require('../config/' + process.env.env_config + '.env')

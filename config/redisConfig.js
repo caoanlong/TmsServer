@@ -1,19 +1,13 @@
 const redis = require('redis')
-const DEVURL = '192.168.1.48'
-const PROURL = '192.168.0.28'
-const client = redis.createClient({
-	
-	'host': DEVURL,
-	'port': 6379,
-	'password': '123456'
-})
+const config = require('./index')
+const client = redis.createClient(config.redis)
 
 client.select('6', (err) => {
 	if (err) {
 		console.log("Error " + err)
 		return false
 	} else {
-		console.log('redis connect success!!!')
+		console.log(`redis connect at ${config.redis.port}!`)
 	}
 })
 
