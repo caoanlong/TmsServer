@@ -1,187 +1,23 @@
-const express = require('express')
-const router = express.Router()
-const snowflake = require('../utils/snowflake')
-
-const Sys_organization = require('../model/Sys_organization')
-const { findCompanyIDByUser } = require('../utils/common')
-
-// 统一返回格式
-let responseData
-router.use((req, res, next) => {
-	responseData = {
-		code: 0,
-		msg: '成功'
-	}
-	next()
-})
+const Router = require('koa-router')
+const router = new Router({prefix: '/sys_organization'})
+const SysOrganizationService = require('../service/SysOrganizationService')
 
 /* 获取机构列表 */
-router.get('/list', (req, res) => {
-	let Organization_PID = req.query.Organization_PID || null
-	Sys_organization.findAll({
-		where: {
-			Organization_PID: Organization_PID
-		}
-	}).then(sys_organizations => {
-		responseData.data = sys_organizations
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
+router.get('/list', SysOrganizationService.getList())
 
 /* 获取所有机构列表 */
-router.get('/list/all', (req, res) => {
-	Sys_organization.findAll().then(sys_organizations => {
-		responseData.data = sys_organizations
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
+router.get('/list/all', SysOrganizationService.getAllList())
 
 /* 获取机构详情 */
-router.get('/info', (req, res) => {
-	let Organization_ID = req.query.Organization_ID
-	Sys_organization.findById(Organization_ID).then(sys_organization => {
-		responseData.data = sys_organization
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
+router.get('/info', SysOrganizationService.getInfo())
 
 /* 添加机构 */
-router.post('/add', (req, res) => {
-	let User_ID = req.user.userID
-	let Organization_ID = snowflake.nextId()
-	let Organization_PID = req.body.Organization_PID || null
-	let Area_ID = req.body.Area_ID
-	let Name = req.body.Name
-	let Grade = req.body.Grade
-	let Sort = req.body.Sort
-	let Address = req.body.Address
-	let ZipCode = req.body.ZipCode
-	let Respo_ID = req.body.Respo_ID
-	let Respo = req.body.Respo
-	let Phone = req.body.Phone
-	let Fax = req.body.Fax
-	let Email = req.body.Email
-	let EnableFlag = req.body.EnableFlag
-	let Remark = req.body.Remark
-	let CreateBy = User_ID
-	let UpdateBy = User_ID
-	let Path = ''
-	findCompanyIDByUser(req.user.userID).then(Company_ID => {
-		Sys_organization.findById(Organization_PID).then(sys_organization => {
-			if (sys_organization) {
-				Path = sys_organization.Path + Organization_PID + ','
-			} else {
-				Path = '0'
-			}
-			Sys_organization.create({
-				Organization_ID,
-				Organization_PID,
-				Company_ID,
-				Area_ID,
-				Name,
-				Grade,
-				Sort,
-				Address,
-				ZipCode,
-				Respo_ID,
-				Respo,
-				Phone,
-				Fax,
-				Email,
-				EnableFlag,
-				Remark,
-				CreateBy,
-				UpdateBy,
-				Path
-			}).then(sys_organization => {
-				res.json(responseData)
-			}).catch(err => {
-				responseData.code = 100
-				responseData.msg = '错误：' + err
-				res.json(responseData)
-			})
-		})
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = err
-		res.json(responseData)
-	})
-})
+router.post('/add', SysOrganizationService.add())
 
 /* 修改机构 */
-router.post('/update', (req, res) => {
-	let User_ID = req.user.userID
-	let Organization_ID = req.body.Organization_ID
-	let Area_ID = req.body.Area_ID
-	let Name = req.body.Name
-	let Grade = req.body.Grade
-	let Sort = req.body.Sort
-	let Address = req.body.Address
-	let ZipCode = req.body.ZipCode
-	let Respo_ID = req.body.Respo_ID
-	let Respo = req.body.Respo
-	let Phone = req.body.Phone
-	let Fax = req.body.Fax
-	let Email = req.body.Email
-	let EnableFlag = req.body.EnableFlag
-	let Remark = req.body.Remark
-	let UpdateBy = User_ID
-	let Path = ''
-	Sys_organization.update({
-		Area_ID,
-		Name,
-		Grade,
-		Sort,
-		Address,
-		ZipCode,
-		Respo_ID,
-		Respo,
-		Phone,
-		Fax,
-		Email,
-		EnableFlag,
-		Remark,
-		UpdateBy,
-		UpdateTime: new Date()
-	}, {
-		where: {
-			Organization_ID
-		}
-	}).then(() => {
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
+router.post('/update', SysOrganizationService.update())
 
 /* 删除机构 */
-router.post('/delete', (req, res) => {
-	let Organization_ID = req.body.Organization_ID
-	Sys_organization.destroy({
-		where: {
-			Organization_ID
-		}
-	}).then(() => {
-		res.json(responseData)
-	}).catch(err => {
-		responseData.code = 100
-		responseData.msg = '错误：' + err
-		res.json(responseData)
-	})
-})
+router.post('/delete', SysOrganizationService.del())
 
 module.exports = router

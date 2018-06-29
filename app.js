@@ -1,33 +1,31 @@
-const createError = require('http-errors')
-const express = require('express')
-const path = require('path')
-const cookieParser = require('cookie-parser')
-const logger = require('morgan')
-
-const app = express()
-
-app.use(logger('dev'))
-app.use(express.json())
-app.use(express.urlencoded({ extended: false }))
-app.use(cookieParser())
-app.use(express.static(path.join(__dirname, 'public')))
-
-app.use('/api', require('./routes/index'))
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-	next(createError(404))
-})
+const Koa = require('koa')
+const logger = require('koa-logger')
+const bodyParser = require('koa-bodyparser')
+const onerror = require('koa-onerror')
+const cors = require('koa2-cors')
+const app = new Koa()
 
 // error handler
-app.use(function(err, req, res, next) {
-	// set locals, only providing error in development
-	res.locals.message = err.message
-	res.locals.error = req.app.get('env') === 'development' ? err : {}
+onerror(app)
 
-	// render the error page
-	res.status(err.status || 500)
-	res.send('error')
-})
+app.use(bodyParser())
+app.use(logger())
+app.use(cors({
+	origin: ctx => {
+		if (ctx.url === '/test') return "*" // 允许来自所有域名请求
+		return ctx.request.header.origin
+		// return 'http://localhost:8080' // 这样就能只允许 http://localhost:8080 这个域名的请求了
+	},
+	exposeHeaders: ['Content-Type', 'Accept', 'X-Access-Token'],
+	allowMethods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
+	allowHeaders: ['Content-Type', 'Accept', 'X-Access-Token', 'Authorization']
+}))
+
+app.use(require('./routes').routes())
+
+// error-handling
+app.on('error', (err, ctx) => {
+	console.error('server error', err, ctx)
+});
 
 module.exports = app
