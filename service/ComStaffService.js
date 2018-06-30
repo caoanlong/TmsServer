@@ -1,4 +1,4 @@
-const Sys_menu = require('../model/Sys_menu')
+const BaseServise = require('./BaseServise')
 const Sys_role = require('../model/Sys_role')
 const Com_staff = require('../model/Com_staff')
 const Sys_staff_role = require('../model/Sys_staff_role')
@@ -6,7 +6,7 @@ const Com_companyinfo = require('../model/Com_companyinfo')
 const snowflake = require('../utils/snowflake')
 const { findCompanyIDByUser } = require('../utils/common')
 
-class ComStaffService {
+class ComStaffService extends BaseServise {
     getList() {
         return async ctx => {
             let { pageIndex = 1, pageSize = 10, RealName, Mobile } = ctx.query
@@ -18,9 +18,9 @@ class ComStaffService {
             if (Mobile) where['Mobile'] = { $like: '%' + Mobile + '%' }
             try {
                 const staffs = await Com_staff.findAndCountAll({ where, offset, limit: pageSize, order: [ ['CreateTime', 'DESC'] ] })
-                ctx.body = { code: 0, msg: '成功', data: { pageIndex, pageSize, count: staffs.count, rows: staffs.rows } }
+                ctx.body = this.responseSussess({ pageIndex, pageSize, count: staffs.count, rows: staffs.rows })
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -32,9 +32,9 @@ class ComStaffService {
                 const staff = await Com_staff.findById(Staff_ID, {
                     include: [ { model: Sys_role }, { model: Com_companyinfo, as: 'company' } ]
                 })
-                ctx.body = { code: 0, msg: '成功', data: staff }
+                ctx.body = this.responseSussess(staff)
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -57,9 +57,9 @@ class ComStaffService {
                     Com_staff.create(data)
                     Sys_staff_role.bulkCreate(staffRoles)
                 })()
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -79,9 +79,9 @@ class ComStaffService {
                 await Com_staff.update(data, { where: { Staff_ID } })
                 await Sys_staff_role.destroy({ where: { staff_id: Staff_ID } })
                 await Sys_staff_role.bulkCreate(staffRoles)
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -92,9 +92,9 @@ class ComStaffService {
             try {
                 await Com_staff.update({ DeleteFlag: 'Y' }, { where: { Staff_ID: { $in: ids } } })
                 await Sys_staff_role.destroy({ where: { staff_id: { $in: ids } } })
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }

@@ -1,3 +1,4 @@
+const BaseServise = require('./BaseServise')
 const Sys_menu = require('../model/Sys_menu')
 const Sys_role = require('../model/Sys_role')
 const Sys_role_menu = require('../model/Sys_role_menu')
@@ -6,7 +7,7 @@ const Com_staff = require('../model/Com_staff')
 const snowflake = require('../utils/snowflake')
 const { findCompanyIDByUser } = require('../utils/common')
 
-class SysRoleService {
+class SysRoleService extends BaseServise {
     getList() {
         return async ctx => {
             let { pageIndex = 1, pageSize = 10, RoleName } = ctx.query
@@ -17,9 +18,9 @@ class SysRoleService {
             if (RoleName) where['RoleName'] = { $like: '%' + RoleName + '%' }
             try {
                 const sys_roles = await Sys_role.findAndCountAll({ where, offset, limit: pageSize, order: [ ['CreateTime', 'DESC'] ] })
-                ctx.body = { code: 0, msg: '成功', data: { pageIndex, pageSize, count: sys_roles.count, rows: sys_roles.rows } }
+                ctx.body = this.responseSussess({ pageIndex, pageSize, count: sys_roles.count, rows: sys_roles.rows })
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -31,9 +32,9 @@ class SysRoleService {
                 const sys_role = await Sys_role.findById(Role_ID, {
                     include: [ { model: Com_staff }, { model: Sys_menu } ]
                 })
-                ctx.body = { code: 0, msg: '成功', data: sys_role }
+                ctx.body = this.responseSussess(sys_role)
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -46,9 +47,9 @@ class SysRoleService {
             try {
                 const Company_ID = await findCompanyIDByUser(User_ID)
                 await Sys_role.create({ Role_ID, Company_ID, RoleName, RoleEnName, RoleType, RoleCode, Remark, CreateBy: User_ID, UpdateBy: User_ID })
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -60,9 +61,9 @@ class SysRoleService {
             const data = { RoleName, RoleEnName, RoleType, RoleCode, Remark, UpdateBy: User_ID, UpdateDate: new Date() }
             try {
                 await Sys_role.update(data, { where: { Role_ID }})
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -73,9 +74,9 @@ class SysRoleService {
             try {
                 await Sys_role.destroy({ where: { Role_ID: { $in: ids } } })
                 await Sys_staff_role.destroy({ where: { role_id: { $in: ids } } })
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -90,9 +91,9 @@ class SysRoleService {
                 }
                 await Sys_role_menu.destroy({ where: { role_id: Role_ID } })
                 await Sys_role_menu.bulkCreate(roleMenus)
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
@@ -107,9 +108,9 @@ class SysRoleService {
                 }
                 await Sys_staff_role.destroy({ where: { role_id: Role_ID } })
                 await Sys_staff_role.bulkCreate(staffRoles)
-                ctx.body = { code: 0, msg: '成功' }
+                ctx.body = this.responseSussess()
             } catch (err) {
-                ctx.body = { code: 100, msg: `错误：${err.toString()}` }
+                ctx.body = this.responseError(err)
             }
         }
     }
