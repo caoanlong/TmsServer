@@ -4,7 +4,7 @@
 Tms后台服务
 
 #### 软件架构
-Node.js
+Node.js、Koa
 
 
 #### 安装教程
